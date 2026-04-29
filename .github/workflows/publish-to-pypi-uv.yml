@@ -19,6 +19,45 @@ jobs:
       - name: Install Xcode CLI Tools
         run: xcode-select --install || true  # 已安装则忽略
 
+      # 托管 runner 不含 macFUSE：扩展编译需要 fuse.h / libfuse3（见 setup.py 搜索路径）。
+      # 仅解出构建所需文件，避免在 CI 中运行系统扩展安装流程。
+      - name: Install macFUSE (build SDK)
+        env:
+          MACFUSE_VERSION: "5.2.0"
+          MACFUSE_DMG_SHA256: "09a4b4c23c1930af45335fc119696797da41562dec1630602d2db637f4804f27"
+        run: |
+          set -euo pipefail
+          dmg="macfuse-${MACFUSE_VERSION}.dmg"
+          url="https://github.com/macfuse/macfuse/releases/download/macfuse-${MACFUSE_VERSION}/${dmg}"
+          curl -fsSL -o "$dmg" "$url"
+          echo "${MACFUSE_DMG_SHA256}  ${dmg}" | shasum -a 256 -c -
+
+          mount_dir="$(mktemp -d)"
+          pkg_parent="$(mktemp -d)"
+          cleanup() {
+            hdiutil detach "$mount_dir" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          hdiutil attach -nobrowse -readonly -mountpoint "$mount_dir" "$dmg"
+          pkg="${mount_dir}/Install macFUSE.pkg"
+          test -f "$pkg"
+          pkg_dir="${pkg_parent}/macfuse.pkg"
+          pkgutil --expand-full "$pkg" "$pkg_dir"
+
+          payload="${pkg_dir}/Core.pkg/Payload"
+          sudo ditto "${payload}/usr/local/include" /usr/local/include
+          sudo ditto "${payload}/usr/local/lib" /usr/local/lib
+          sudo mkdir -p /Library/Filesystems/macfuse.fs/Contents/Frameworks
+          sudo ditto \
+            "${payload}/Library/Filesystems/macfuse.fs/Contents/Frameworks/MFMount.framework" \
+            /Library/Filesystems/macfuse.fs/Contents/Frameworks/MFMount.framework
+
+          echo "PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}" >> "$GITHUB_ENV"
+          test -f /usr/local/include/fuse3/fuse.h
+          test -f /usr/local/lib/libfuse3.dylib
+          test -f /usr/local/lib/pkgconfig/fuse3.pc
+
       # # macOS必须：设置最低兼容版本（支持macOS 10.15+）
       # - name: Set macOS Deployment Target
       #   run: echo "MACOSX_DEPLOYMENT_TARGET=10.15" >> $GITHUB_ENV
