@@ -1,0 +1,60 @@
+[build-system]
+requires = [
+    "setuptools>=69",
+    "wheel",
+    "Cython>=3.2.4",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "macfusepy"
+version = "0.6.0"
+description = "Cython bindings for macFUSE 5.2+ libfuse3 on macOS"
+readme = "README.md"
+requires-python = ">=3.14"
+license = "ISC"
+authors = [
+    { name = "touxiaoling" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: System :: Filesystems",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/touxiaoling/macfusepy"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "benchmark: 性能基准测试，默认跳过；只跑它们用 uv run pytest --run-benchmarks -m benchmark tests/test_benchmarks.py",
+]
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[tool.ruff.lint.per-file-ignores]
+"macfusepy/_core.py" = ["E402", "F401", "F821"]
+"macfusepy/_lowlevel.py" = ["E402", "F401", "F821"]
+
+[tool.ty.src]
+exclude = ["macfusepy/_core.py", "macfusepy/_lowlevel.py", "examples/sftp.py"]
+
+[tool.basedpyright]
+ignore = ["macfusepy/_core.py", "macfusepy/_lowlevel.py", "examples/sftp.py"]
+
+[dependency-groups]
+dev = [
+    "cython>=3.2.4",
+    "pytest>=9.0.3",
+    "pytest-benchmark>=5.2.3",
+    "pytest-cov>=7.1.0",
+    "setuptools>=82.0.1",
+]

@@ -1,0 +1,71 @@
+# Publish a release to PyPI.
+#
+name: "Publish to PyPI"
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-distributions-macos:
+    name: Build macOS Distributions
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # macOS必须：安装Xcode命令行工具（Cython扩展编译依赖）
+      - name: Install Xcode CLI Tools
+        run: xcode-select --install || true  # 已安装则忽略
+
+      # # macOS必须：设置最低兼容版本（支持macOS 10.15+）
+      # - name: Set macOS Deployment Target
+      #   run: echo "MACOSX_DEPLOYMENT_TARGET=10.15" >> $GITHUB_ENV
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: "Build distributions"
+        run: |
+          uv build --python 3.14t --wheel
+          uv build --python 3.14 --wheel
+          uv build --python 3.14 --sdist
+
+      - name: Upload macOS Distributions to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: distributions-macos
+          path: dist/
+          retention-days: 1
+
+
+  publish-all-to-pypi:
+    name: Publish All Distributions to PyPI
+    runs-on: ubuntu-latest
+    needs: [build-distributions-macos]
+    environment:
+      name: release
+    permissions:
+      id-token: write  # PyPI可信发布必需权限
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download All Built Distributions
+        uses: actions/download-artifact@v4
+        with:
+          pattern: distributions-*
+          merge-multiple: true
+          path: dist/
+
+      - name: Verify All Distributions
+        run: |
+          echo "All distributions in dist/:"
+          ls -l dist/
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Publish All Distributions to PyPI
+        run: uv publish  # 自动上传 dist/ 下所有 wheel 和 sdist
