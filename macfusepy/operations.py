@@ -2,6 +2,7 @@
 
 from macfusepy.inode_operations import InodeOperations
 from macfusepy.path_operations import (
+    CreateResult,
     DirEntry,
     DirEntryName,
     FileHandle,
@@ -10,6 +11,7 @@ from macfusepy.path_operations import (
     OpenResult,
     OperationStatus,
     Operations,
+    PathEntryAttrsResult,
     StatResult,
     StatVfsResult,
     TimespecPair,
@@ -18,6 +20,7 @@ from macfusepy.path_operations import (
 
 
 __all__: tuple[str, ...] = (
+    "CreateResult",
     "DirEntry",
     "DirEntryName",
     "FileHandle",
@@ -27,6 +30,7 @@ __all__: tuple[str, ...] = (
     "OpenResult",
     "OperationStatus",
     "Operations",
+    "PathEntryAttrsResult",
     "StatResult",
     "StatVfsResult",
     "TimespecPair",
